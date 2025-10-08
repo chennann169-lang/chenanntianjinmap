@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>天津市滨海新区数字人文地图</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        
+        body, html {
+            height: 100%;
+            margin: 0;
+            color: #333;
+        }
+        
+        #map {
+            height: 85vh;
+            width: 100%;
+        }
+        
+        .sidebar {
+            padding: 15px;
+            height: 15vh;
+            overflow: auto;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-size: 14px;
+            line-height: 1.6;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .popup-media img, .popup-media video {
+            max-width: 100%;
+            max-height: 180px;
+            display: block;
+            margin: 0 auto 6px auto;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        
+        .point-title {
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .deep-read {
+            font-size: 13px;
+            color: #333;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+        
+        .category-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .cultural {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .legal {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .socialist {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        
+        .innovation {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .header p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .legend {
+            position: absolute;
+            bottom: 30px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .media-container {
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .media-placeholder {
+            background-color: #f5f5f5;
+            border: 1px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-radius: 4px;
+        }
+        
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .leaflet-popup-content {
+            margin: 15px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>天津市滨海新区数字人文地图</h1>
+        <p>有温度 · 有深度 · 有态度</p>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="sidebar">
+        <strong>天津市滨海新区数字人文地图</strong> - 点击地图上的标记查看点位详情。<br>
+        地图中心: 39.003, 117.710 (滨海新区)<br>
+        提示: 此地图展示了滨海新区的文化、法治、创新等多个维度的代表性地点。
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        const map = L.map('map').setView([39.003, 117.710], 12);
+        
+        L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+            subdomains: ['1', '2', '3', '4'],
+            attribution: '&copy; <a href="https://ditu.amap.com/">高德地图</a>'
+        }).addTo(map);
+        
+        const binhaiSouthWest = L.latLng(38.85, 117.50);
+        const binhaiNorthEast = L.latLng(39.15, 117.90);
+        const binhaiBounds = L.latLngBounds(binhaiSouthWest, binhaiNorthEast);
+        
+        map.setMaxBounds(binhaiBounds);
+        
+        map.on('drag', function() {
+            map.panInsideBounds(binhaiBounds, { animate: false });
+        });
+        
+        const culturalIcon = L.divIcon({
+            html: '<div style="background-color:#4CAF50; width:20px; height:20px; border-radius:50%; border:2px solid white; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
+            className: 'cultural-icon',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+        
+        const legalIcon = L.divIcon({
+            html: '<div style="background-color:#2196F3; width:20px; height:20px; border-radius:50%; border:2px solid white; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
+            className: 'legal-icon',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+        
+        const socialistIcon = L.divIcon({
+            html: '<div style="background-color:#F44336; width:20px; height:20px; border-radius:50%; border:2px solid white; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
+            className: 'socialist-icon',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+        
+        const innovationIcon = L.divIcon({
+            html: '<div style="background-color:#FF9800; width:20px; height:20px; border-radius:50%; border:2px solid white; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>',
+            className: 'innovation-icon',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+        
+        const points = [
+            {
+                name: "国家海洋博物馆",
+                coords: [39.090, 117.790],
+                type: "cultural",
+                description: "中国首座国家级、综合性、公益性的海洋博物馆，展示海洋自然历史和人文历史。",
+                details: "国家海洋博物馆坐落于天津滨海新区，占地面积15公顷，建筑面积8万平方米，展览面积2.3万平方米。博物馆建筑主体三层，局部四层，展厅分为海洋自然、海洋人文、海洋考古等多个主题展区。",
+                image: "images/博物馆.png",
+                video: ""
+            },
+            {
+                name: "滨海新区人民法院",
+                coords: [39.020, 117.706],
+                type: "legal", 
+                description: "滨海新区司法体系的核心机构，负责审理各类案件，维护社会公平正义。",
+                details: "滨海新区人民法院坚持司法为民理念，积极推进智慧法院建设，提高审判效率和透明度。近年来，该院在多元化纠纷解决机制方面取得显著成效，有效维护了人民群众的合法权益。",
+                image: "images/滨海新区人民法院.png",
+                video: ""
+            },
+            {
+                name: "滨海新区文化中心",
+                coords: [39.005, 117.670],
+                type: "cultural",
+                description: "集文化展示、艺术表演、科普教育于一体的综合性文化设施。",
+                details: "滨海新区文化中心总建筑面积约32万平方米，包括滨海图书馆、滨海美术馆、滨海演艺中心、滨海科技馆和滨海市民活动中心五大场馆。这里已成为天津市民文化休闲的重要场所。",
+                image: "images/文化中心.png",
+                video: ""
+            },
+            {
+                name: "天津经济技术开发区",
+                coords: [39.040, 117.680],
+                type: "innovation",
+                description: "中国首批国家级经济技术开发区，是天津经济发展的重要引擎。",
+                details: "天津经济技术开发区成立于1984年，是中国首批国家级经济技术开发区之一。经过30多年的发展，已形成电子信息、汽车制造、生物医药、食品饮料等支柱产业，吸引了大量国内外知名企业入驻。",
+                image: "images/开发区.png",
+                video: ""
+            },
+            {
+                name: "天津港",
+                coords: [38.980, 117.780],
+                type: "innovation",
+                description: "世界级人工深水港，中国北方最大的综合性港口。",
+                details: "天津港是中国北方最大的综合性港口，也是世界级人工深水港。港口航道水深达-22米，30万吨级船舶可自由进出港口。天津港已与全球180多个国家和地区的500多个港口有贸易往来。",
+                image: "images/港.png",
+                video: ""
+            },
+            {
+                name: "滨海新区法治公园",
+                coords: [39.140, 117.781],
+                type: "legal",
+                description: "集法治宣传、休闲娱乐于一体的法治文化主题公园。",
+                details: "滨海新区法治公园占地面积约10万平方米，园内设有法治宣传栏、法治雕塑、法律知识问答区等设施。公园定期举办法律咨询、普法讲座等活动，是市民学习法律知识、增强法治意识的重要场所。",
+                image: "images/法制.png",
+                video: ""
+            },
+            {
+                name: "大沽口炮台遗址",
+                coords: [38.980, 117.71],
+                type: "socialist",
+                description: "中国近代史上重要的海防要塞，爱国主义教育基地。",
+                details: "大沽口炮台遗址位于海河入海口处，是中国近代史上重要的海防要塞。这里曾是第二次鸦片战争和八国联军侵华战争的重要战场。现为全国重点文物保护单位和爱国主义教育基地。",
+                image: "images/炮台.png",
+                video: ""
+            },
+            {
+                name: "中新天津生态城",
+                coords: [39.150, 117.800],
+                type: "innovation",
+                description: "中国与新加坡两国政府合作的战略性项目，致力于建设可持续发展的生态城市。",
+                details: "中新天津生态城是中国与新加坡两国政府的战略性合作项目，规划面积30平方公里。生态城以'三和'(人与自然和谐、人与经济和谐、人与社会和谐)和'三能'(能实行、能推广、能复制)为发展理念，致力于建设资源节约型、环境友好型的社会。",
+                image: "images/生态城.png",
+                video: ""
+            }
+        ];
+        
+        points.forEach(point => {
+            let icon;
+            let categoryClass;
+            let categoryName;
+            
+            switch(point.type) {
+                case "cultural":
+                    icon = culturalIcon;
+                    categoryClass = "cultural";
+                    categoryName = "文化传承";
+                    break;
+                case "legal":
+                    icon = legalIcon;
+                    categoryClass = "legal";
+                    categoryName = "法治建设";
+                    break;
+                case "socialist":
+                    icon = socialistIcon;
+                    categoryClass = "socialist";
+                    categoryName = "红色文化";
+                    break;
+                case "innovation":
+                    icon = innovationIcon;
+                    categoryClass = "innovation";
+                    categoryName = "创新发展";
+                    break;
+            }
+            
+            let mediaContent = '';
+            if (point.image) {
+                mediaContent += `
+                    <div class="media-container">
+                        <img src="${point.image}" alt="${point.name}" onerror="this.style.display='none'; document.getElementById('placeholder-${point.name.replace(/\s+/g, '-')}').style.display='block';">
+                        <div id="placeholder-${point.name.replace(/\s+/g, '-')}" class="media-placeholder" style="display:none;">
+                            图片加载失败，请检查路径: ${point.image}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (point.video) {
+                mediaContent += `
+                    <div class="media-container">
+                        <video controls width="100%">
+                            <source src="${point.video}" type="video/mp4">
+                            您的浏览器不支持视频播放。
+                        </video>
+                        <div class="media-placeholder" style="display:none;">
+                            视频加载失败，请检查路径: ${point.video}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            const popupContent = `
+                <div style="width: 320px;">
+                    <div class="point-title">${point.name}</div>
+                    <span class="category-tag ${categoryClass}">${categoryName}</span>
+                    <div class="deep-read">${point.description}</div>
+                    ${mediaContent}
+                    <div class="deep-read">${point.details}</div>
+                </div>
+            `;
+            
+            L.marker(point.coords, {icon: icon})
+                .addTo(map)
+                .bindPopup(popupContent);
+        });
+        
+        const legend = L.control({position: 'bottomright'});
+        
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <h4>图例</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color:#4CAF50"></div>
+                    <span>文化传承</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color:#2196F3"></div>
+                    <span>法治建设</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color:#F44336"></div>
+                    <span>红色文化</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color:#FF9800"></div>
+                    <span>创新发展</span>
+                </div>
+            `;
+            return div;
+        };
+        
+        legend.addTo(map);
+    </script>
+</body>
+</html>
